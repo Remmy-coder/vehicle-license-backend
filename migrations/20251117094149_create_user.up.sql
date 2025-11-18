@@ -1,4 +1,4 @@
--- Add migration script here
+-- Add up migration script here
 CREATE TABLE users (
     id text PRIMARY KEY,
     email text UNIQUE NOT NULL,

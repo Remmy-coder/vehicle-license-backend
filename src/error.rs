@@ -12,14 +12,17 @@ pub enum AppError {
     #[error("I/O error: {0}")]
     Io(#[from] std::io::Error),
 
+    #[error("Authentication error: {0}")]
+    Auth(String),
+
+    #[error("Validation error: {0}")]
+    Validation(String),
+
+    #[error("Not found: {0}")]
+    NotFound(String),
+
     #[error("Unexpected error: {0}")]
     Other(String),
 }
 
 pub type AppResult<T> = Result<T, AppError>;
-
-impl From<anyhow::Error> for AppError {
-    fn from(err: anyhow::Error) -> Self {
-        AppError::Other(err.to_string())
-    }
-}
