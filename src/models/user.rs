@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, Type};
 use time::OffsetDateTime;
 
-#[derive(Debug, Serialize, Deserialize, Type)]
+#[derive(Debug, Serialize, Deserialize, Type, Clone, PartialEq, Eq)]
 #[sqlx(type_name = "text")]
 #[serde(rename_all = "lowercase")]
 pub enum Role {
@@ -23,4 +23,3 @@ pub struct User {
     #[serde(with = "time::serde::rfc3339")]
     pub updated_at: OffsetDateTime,
 }
-

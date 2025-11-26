@@ -4,6 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+axum = { version = "0.8", features = ["macros"] }
+axum-extra = { version = "0.10", features = ["cookie", "typed-header"] }
 tokio = { version = "1.45", features = ["macros", "rt-multi-thread"] }
 sqlx = { version = "0.8", features = [
   "postgres",
@@ -24,3 +26,9 @@ time = { version = "0.3.44", features = [
   "serde-human-readable",
   "macros",
 ] }
+serde_json = "1"
+jwt = "0.16"
+hmac = "0.12"
+sha2 = "0.10"
+tracing = "0.1"
+tracing-subscriber = "0.3.20"

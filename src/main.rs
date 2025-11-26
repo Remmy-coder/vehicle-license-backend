@@ -1,7 +1,10 @@
+mod auth;
+mod controllers;
 mod db;
 mod error;
 mod models;
 mod repositories;
+mod routes;
 
 use crate::{db::init_pool_default, error::AppResult};
 use dotenvy::dotenv;
