@@ -135,27 +135,20 @@ pub struct RequireRole {
 }
 
 impl RequireRole {
-    pub fn new(roles: Vec<crate::models::user::Role>) -> Self {
+    pub fn new(roles: Vec<Role>) -> Self {
         Self { roles }
     }
 
     pub fn admin() -> Self {
-        Self::new(vec![crate::models::user::Role::Admin])
+        Self::new(vec![Role::Admin])
     }
 
     pub fn officer() -> Self {
-        Self::new(vec![
-            crate::models::user::Role::Officer,
-            crate::models::user::Role::Admin,
-        ])
+        Self::new(vec![Role::Officer, Role::Admin])
     }
 
     pub fn any() -> Self {
-        Self::new(vec![
-            crate::models::user::Role::Applicant,
-            crate::models::user::Role::Officer,
-            crate::models::user::Role::Admin,
-        ])
+        Self::new(vec![Role::Applicant, Role::Officer, Role::Admin])
     }
 
     pub async fn check(&self, ctx: &ApiContext, user_id: &str) -> Result<(), AppError> {
@@ -170,3 +163,4 @@ impl RequireRole {
         Ok(())
     }
 }
+
