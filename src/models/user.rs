@@ -1,13 +1,17 @@
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, Type};
 use time::OffsetDateTime;
+use utoipa::ToSchema;
 
-#[derive(Debug, Serialize, Deserialize, Type, Clone, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, Type, Clone, PartialEq, Eq, ToSchema)]
 #[sqlx(type_name = "text")]
 #[serde(rename_all = "lowercase")]
 pub enum Role {
+    #[sqlx(rename = "applicant")]
     Applicant,
+    #[sqlx(rename = "officer")]
     Officer,
+    #[sqlx(rename = "admin")]
     Admin,
 }
 

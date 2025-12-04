@@ -3,9 +3,17 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
+use serde::Serialize;
 use serde_json::json;
 use sqlx::Error as SqlxError;
 use thiserror::Error;
+use utoipa::ToSchema;
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct ErrorResponse {
+    #[schema(example = "Email already exists")]
+    pub error: String,
+}
 
 #[derive(Error, Debug)]
 pub enum AppError {

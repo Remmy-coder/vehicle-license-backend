@@ -1,6 +1,6 @@
 use crate::{
     auth::auth_extractor::{ApiContext, AuthUser},
-    error::{AppError, AppResult},
+    error::{AppError, AppResult, ErrorResponse},
     models::user::Role,
     repositories::user_repository::UserRepository,
 };
@@ -13,14 +13,24 @@ use axum_extra::extract::CookieJar;
 use axum_extra::extract::cookie::{Cookie, SameSite};
 use serde::{Deserialize, Serialize};
 use time::Duration;
+use utoipa::ToSchema;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct RegisterRequest {
+    #[schema(example = "john.doe@example.com")]
     pub email: String,
+
+    #[schema(example = "SecurePass123!", min_length = 8)]
     pub password: String,
+
+    #[schema(example = "John")]
     pub first_name: String,
+
+    #[schema(example = "Doe")]
     pub last_name: String,
+
     #[serde(default = "default_role")]
+    #[schema(example = "applicant")]
     pub role: Role,
 }
 
@@ -28,33 +38,87 @@ fn default_role() -> Role {
     Role::Applicant
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct LoginRequest {
+    #[schema(example = "john.doe@example.com")]
     pub email: String,
+
+    #[schema(example = "SecurePass123!")]
     pub password: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema)]
 pub struct AuthResponse {
+    #[schema(example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")]
     pub token: String,
+
     pub user: UserInfo,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema)]
 pub struct UserInfo {
+    #[schema(example = "LaeC612OVPyQgROf_L_xP")]
     pub id: String,
+
+    #[schema(example = "john.doe@example.com")]
     pub email: String,
+
+    #[schema(example = "John")]
     pub first_name: String,
+
+    #[schema(example = "Doe")]
     pub last_name: String,
+
+    #[schema(example = "applicant")]
     pub role: Role,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct ChangePasswordRequest {
+    #[schema(example = "OldPass123!")]
     pub current_password: String,
+
+    #[schema(example = "NewSecurePass456!", min_length = 8)]
     pub new_password: String,
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/auth/register",
+    request_body = RegisterRequest,
+    responses(
+        (status = 201, description = "User successfully registered", body = AuthResponse,
+            example = json!({
+                "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                "user": {
+                    "id": "550e8400-e29b-41d4-a716-446655440000",
+                    "email": "john.doe@example.com",
+                    "first_name": "John",
+                    "last_name": "Doe",
+                    "role": "user"
+                }
+            })
+        ),
+        (status = 400, description = "Validation error - Password too short or invalid data", body = ErrorResponse,
+            example = json!({
+                "error": "Password must be at least 8 characters"
+            })
+        ),
+        (status = 400, description = "Email already exists", body = ErrorResponse,
+            example = json!({
+                "error": "Email already exists"
+            })
+        ),
+        (status = 500, description = "Internal server error", body = ErrorResponse,
+            example = json!({
+                "error": "Database error: connection failed"
+            })
+        ),
+    ),
+    tag = "Authentication",
+    summary = "Register a new user",
+    description = "Creates a new user account with the provided credentials. Password must be at least 8 characters. Returns a JWT token for immediate authentication."
+)]
 pub async fn register(
     State(ctx): State<ApiContext>,
     Json(data): Json<RegisterRequest>,
@@ -101,6 +165,38 @@ pub async fn register(
     ))
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/auth/login",
+    request_body = LoginRequest,
+    responses(
+        (status = 200, description = "Login successful", body = AuthResponse,
+            example = json!({
+                "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                "user": {
+                    "id": "550e8400-e29b-41d4-a716-446655440000",
+                    "email": "john.doe@example.com",
+                    "first_name": "John",
+                    "last_name": "Doe",
+                    "role": "user"
+                }
+            })
+        ),
+        (status = 401, description = "Invalid credentials", body = ErrorResponse,
+            example = json!({
+                "error": "Invalid email or password"
+            })
+        ),
+        (status = 500, description = "Internal server error", body = ErrorResponse,
+            example = json!({
+                "error": "Database error: connection failed"
+            })
+        ),
+    ),
+    tag = "Authentication",
+    summary = "Authenticate a user",
+    description = "Authenticates a user with email and password. Returns a JWT token in the response body and sets an HTTP-only secure cookie for session management. The cookie expires after 2 weeks."
+)]
 pub async fn login(
     State(ctx): State<ApiContext>,
     Json(data): Json<LoginRequest>,
@@ -141,6 +237,19 @@ pub async fn login(
     ))
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/auth/logout",
+    responses(
+        (status = 200, description = "Successfully logged out - JWT cookie removed"),
+        (status = 500, description = "Internal server error", body = ErrorResponse,
+            example = json!({"error": "Failed to clear session"})
+        ),
+    ),
+    tag = "Authentication",
+    summary = "Logout current user",
+    description = "Logs out the current user by removing the JWT authentication cookie. The cookie is set to expire immediately."
+)]
 pub async fn logout(jar: CookieJar) -> AppResult<CookieJar> {
     let cookie = Cookie::build("jwt")
         .path("/")
@@ -150,6 +259,36 @@ pub async fn logout(jar: CookieJar) -> AppResult<CookieJar> {
     Ok(jar.remove(cookie))
 }
 
+#[utoipa::path(
+    get,
+    path = "/api/auth/me",
+    responses(
+        (status = 200, description = "Current user information", body = UserInfo,
+            example = json!({
+                "id": "LaeC612OVPyQgROf_L_xP",
+                "email": "john.doe@example.com",
+                "first_name": "John",
+                "last_name": "Doe",
+                "role": "applicant"
+            })
+        ),
+        (status = 401, description = "Not authenticated", body = ErrorResponse,
+            example = json!({"error": "Authentication required"})
+        ),
+        (status = 404, description = "User not found", body = ErrorResponse,
+            example = json!({"error": "User not found"})
+        ),
+        (status = 500, description = "Internal server error", body = ErrorResponse,
+            example = json!({"error": "Database error: connection failed"})
+        ),
+    ),
+    tag = "Authentication",
+    summary = "Get current user information",
+    description = "Returns the profile information of the currently authenticated user. Requires a valid JWT token in the Authorization header or JWT cookie.",
+    security(
+        ("bearer_auth" = [])
+    )
+)]
 pub async fn get_current_user(
     auth_user: AuthUser,
     State(ctx): State<ApiContext>,
@@ -167,6 +306,35 @@ pub async fn get_current_user(
     }))
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/auth/change-password",
+    request_body = ChangePasswordRequest,
+    responses(
+        (status = 204, description = "Password successfully changed"),
+        (status = 400, description = "Validation error", body = ErrorResponse,
+            example = json!({"error": "Password must be at least 8 characters"})
+        ),
+        (status = 401, description = "Authentication failed", body = ErrorResponse,
+            examples(
+                ("Not authenticated" = (value = json!({"error": "Authentication required"}))),
+                ("Wrong password" = (value = json!({"error": "Invalid email or password"})))
+            )
+        ),
+        (status = 404, description = "User not found", body = ErrorResponse,
+            example = json!({"error": "User not found"})
+        ),
+        (status = 500, description = "Internal server error", body = ErrorResponse,
+            example = json!({"error": "Database error: connection failed"})
+        ),
+    ),
+    tag = "Authentication",
+    summary = "Change user password",
+    description = "Changes the password for the currently authenticated user. Requires the current password for verification. The new password must be at least 8 characters and will be hashed using Argon2 before storage.",
+    security(
+        ("bearer_auth" = [])
+    )
+)]
 pub async fn change_password(
     auth_user: AuthUser,
     State(ctx): State<ApiContext>,

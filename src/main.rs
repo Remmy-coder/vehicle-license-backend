@@ -5,11 +5,14 @@ mod error;
 mod models;
 mod repositories;
 mod routes;
+mod swagger;
 
 use crate::{auth::auth_extractor::ApiContext, db::init_pool_default};
 use axum::Router;
 use dotenvy::dotenv;
 use std::env;
+use utoipa::OpenApi;
+use utoipa_swagger_ui::SwaggerUi;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -28,8 +31,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         jwt_secret,
     };
 
+    let swagger = SwaggerUi::new("/docs").url("/api-doc/openapi.json", swagger::ApiDoc::openapi());
+
     let app = Router::new()
         .nest("/api/auth", routes::auth_routes::auth_routes())
+        .merge(swagger)
         .with_state(ctx);
 
     let addr = format!("{}:{}", host, port);
