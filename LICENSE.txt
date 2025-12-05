@@ -1,0 +1,18 @@
+Copyright (c) 2025 R C O D R
+
+All rights reserved.
+
+Permission is hereby granted to view and use this software for personal
+or internal organizational purposes only.
+
+You may NOT: - copy, modify, merge, publish, distribute, sublicense, or
+sell any part of this software, - use this software or its source code
+for any commercial purpose, - create derivative works based on this
+software, - reuse or repurpose any part of the source code,
+architecture, design, schema, or API specification, - redistribute the
+software in any format.
+
+This software is provided “as is”, without warranty of any kind, express
+or implied.
+
+For licensing inquiries, contact: remmy.ro@gmail.com

@@ -43,8 +43,8 @@ use utoipa::openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme};
             email = "remmy.ro@gmail.com"
         ),
         license(
-            name = "MIT",
-            url = "https://opensource.org/licenses/MIT"
+            name = "CC BY-NC-ND 4.0",
+            url = "https://creativecommons.org/licenses/by-nc-nd/4.0/"
         )
     ),
     servers(
