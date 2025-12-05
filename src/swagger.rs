@@ -3,10 +3,10 @@ use utoipa::OpenApi;
 use crate::{
     controllers::auth_controller::{
         __path_change_password, __path_get_current_user, __path_login, __path_logout,
-        __path_register, AuthResponse, ChangePasswordRequest, LoginRequest, RegisterRequest,
-        UserInfo,
+        __path_register,
     },
     error::ErrorResponse,
+    models::auth::{AuthResponse, ChangePasswordRequest, LoginRequest, RegisterRequest, UserInfo},
 };
 
 use utoipa::openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme};

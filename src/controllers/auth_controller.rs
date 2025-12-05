@@ -1,86 +1,16 @@
 use crate::{
-    auth::auth_extractor::{ApiContext, AuthUser},
+    auth::{
+        auth_extractor::{ApiContext, AuthUser},
+        utils::{hash_password, verify_password},
+    },
     error::{AppError, AppResult, ErrorResponse},
-    models::user::Role,
+    models::auth::{AuthResponse, ChangePasswordRequest, LoginRequest, RegisterRequest, UserInfo},
     repositories::user_repository::UserRepository,
-};
-use argon2::{
-    Argon2,
-    password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString, rand_core::OsRng},
 };
 use axum::{Json, extract::State, http::StatusCode};
 use axum_extra::extract::CookieJar;
 use axum_extra::extract::cookie::{Cookie, SameSite};
-use serde::{Deserialize, Serialize};
 use time::Duration;
-use utoipa::ToSchema;
-
-#[derive(Debug, Deserialize, ToSchema)]
-pub struct RegisterRequest {
-    #[schema(example = "john.doe@example.com")]
-    pub email: String,
-
-    #[schema(example = "SecurePass123!", min_length = 8)]
-    pub password: String,
-
-    #[schema(example = "John")]
-    pub first_name: String,
-
-    #[schema(example = "Doe")]
-    pub last_name: String,
-
-    #[serde(default = "default_role")]
-    #[schema(example = "applicant")]
-    pub role: Role,
-}
-
-fn default_role() -> Role {
-    Role::Applicant
-}
-
-#[derive(Debug, Deserialize, ToSchema)]
-pub struct LoginRequest {
-    #[schema(example = "john.doe@example.com")]
-    pub email: String,
-
-    #[schema(example = "SecurePass123!")]
-    pub password: String,
-}
-
-#[derive(Debug, Serialize, ToSchema)]
-pub struct AuthResponse {
-    #[schema(example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")]
-    pub token: String,
-
-    pub user: UserInfo,
-}
-
-#[derive(Debug, Serialize, ToSchema)]
-pub struct UserInfo {
-    #[schema(example = "LaeC612OVPyQgROf_L_xP")]
-    pub id: String,
-
-    #[schema(example = "john.doe@example.com")]
-    pub email: String,
-
-    #[schema(example = "John")]
-    pub first_name: String,
-
-    #[schema(example = "Doe")]
-    pub last_name: String,
-
-    #[schema(example = "applicant")]
-    pub role: Role,
-}
-
-#[derive(Debug, Deserialize, ToSchema)]
-pub struct ChangePasswordRequest {
-    #[schema(example = "OldPass123!")]
-    pub current_password: String,
-
-    #[schema(example = "NewSecurePass456!", min_length = 8)]
-    pub new_password: String,
-}
 
 #[utoipa::path(
     post,
@@ -361,36 +291,4 @@ pub async fn change_password(
     UserRepository::update_password(&ctx.db, &auth_user.user_id, &new_hash).await?;
 
     Ok(StatusCode::NO_CONTENT)
-}
-
-async fn hash_password(password: &str) -> AppResult<String> {
-    let password = password.to_string();
-
-    tokio::task::spawn_blocking(move || {
-        let salt = SaltString::generate(&mut OsRng);
-        let argon2 = Argon2::default();
-
-        argon2
-            .hash_password(password.as_bytes(), &salt)
-            .map(|hash| hash.to_string())
-            .map_err(|e| AppError::Auth(format!("Failed to hash password: {}", e)))
-    })
-    .await
-    .map_err(|e| AppError::Other(format!("Task join error: {}", e)))?
-}
-
-async fn verify_password(password: &str, password_hash: &str) -> AppResult<()> {
-    let password = password.to_string();
-    let password_hash = password_hash.to_string();
-
-    tokio::task::spawn_blocking(move || {
-        let parsed_hash = PasswordHash::new(&password_hash)
-            .map_err(|e| AppError::Auth(format!("Invalid password hash: {}", e)))?;
-
-        Argon2::default()
-            .verify_password(password.as_bytes(), &parsed_hash)
-            .map_err(|_| AppError::Auth("Invalid email or password".to_string()))
-    })
-    .await
-    .map_err(|e| AppError::Other(format!("Task join error: {}", e)))?
 }
