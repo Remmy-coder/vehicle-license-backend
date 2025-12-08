@@ -35,6 +35,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let app = Router::new()
         .nest("/api/auth", routes::auth_routes::auth_routes())
+        .nest("/api/user", routes::user_routes::user_routes())
         .merge(swagger)
         .with_state(ctx);
 

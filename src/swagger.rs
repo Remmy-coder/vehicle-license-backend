@@ -1,12 +1,15 @@
 use utoipa::OpenApi;
 
 use crate::{
-    controllers::auth_controller::{
-        __path_change_password, __path_get_current_user, __path_login, __path_logout,
-        __path_register,
+    controllers::{
+        auth_controller::{
+            __path_change_password, __path_get_current_user, __path_login, __path_logout,
+            __path_register,
+        },
+        user_controller::__path_create_user_without_pass,
     },
     error::ErrorResponse,
-    models::auth::{AuthResponse, ChangePasswordRequest, LoginRequest, RegisterRequest, UserInfo},
+    models::{auth::{AuthResponse, ChangePasswordRequest, LoginRequest, RegisterRequest, UserInfo}, user::{CreateUserWithoutPassRequest, User}},
 };
 
 use utoipa::openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme};
@@ -18,7 +21,9 @@ use utoipa::openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme};
         register,
         get_current_user,
         change_password,
-        logout
+        logout,
+
+        create_user_without_pass,
     ),
     components(
         schemas(
@@ -27,11 +32,16 @@ use utoipa::openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme};
             AuthResponse,
             UserInfo,
             ChangePasswordRequest,
-            ErrorResponse
+            
+            ErrorResponse,
+
+            CreateUserWithoutPassRequest,
+            User
         )
     ),
     tags(
         (name = "Authentication", description = "User authentication and registration endpoints"),
+        (name = "User Management", description = "CRUD operations for system users"),
     ),
     modifiers(&SecurityAddon),
     info(

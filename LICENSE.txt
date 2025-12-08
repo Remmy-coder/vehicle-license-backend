@@ -1,18 +1,22 @@
 Copyright (c) 2025 R C O D R
+All Rights Reserved.
 
-All rights reserved.
+LICENSE TERMS:
+This software and its source code are proprietary and confidential.
 
-Permission is hereby granted to view and use this software for personal
-or internal organizational purposes only.
+PERMITTED USE:
+- Viewing the source code for evaluation purposes only
+- Personal learning and educational reference
 
-You may NOT: - copy, modify, merge, publish, distribute, sublicense, or
-sell any part of this software, - use this software or its source code
-for any commercial purpose, - create derivative works based on this
-software, - reuse or repurpose any part of the source code,
-architecture, design, schema, or API specification, - redistribute the
-software in any format.
+PROHIBITED WITHOUT WRITTEN PERMISSION:
+- Copying, modifying, or using any part of this code
+- Using this software in production environments
+- Creating derivative works or inspired implementations
+- Reusing algorithms, database schemas, API designs, or architecture patterns
+- Commercial or non-commercial deployment
+- Reverse engineering or extracting business logic
 
-This software is provided “as is”, without warranty of any kind, express
-or implied.
+ENFORCEMENT:
+Unauthorized use will be pursued to the full extent of applicable law.
 
-For licensing inquiries, contact: remmy.ro@gmail.com
+For licensing or collaboration inquiries: remmy.ro@gmail.com

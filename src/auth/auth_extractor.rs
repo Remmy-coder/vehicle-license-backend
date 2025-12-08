@@ -163,4 +163,3 @@ impl RequireRole {
         Ok(())
     }
 }
-
