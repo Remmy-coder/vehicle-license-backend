@@ -6,10 +6,10 @@ use crate::{
             __path_change_password, __path_get_current_user, __path_login, __path_logout,
             __path_register,
         },
-        user_controller::__path_create_user_without_pass,
+        user_controller::{__path_create_user_without_pass, __path_get_all_users},
     },
     error::ErrorResponse,
-    models::{auth::{AuthResponse, ChangePasswordRequest, LoginRequest, RegisterRequest, UserInfo}, user::{CreateUserWithoutPassRequest, User}},
+    models::{auth::{AuthResponse, ChangePasswordRequest, LoginRequest, RegisterRequest, UserInfo}, user::{CreateUserWithoutPassRequest, PaginatedUsersResponse, PaginationInfo, User}},
 };
 
 use utoipa::openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme};
@@ -24,6 +24,7 @@ use utoipa::openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme};
         logout,
 
         create_user_without_pass,
+        get_all_users,
     ),
     components(
         schemas(
@@ -36,7 +37,9 @@ use utoipa::openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme};
             ErrorResponse,
 
             CreateUserWithoutPassRequest,
-            User
+            User,
+            PaginatedUsersResponse,
+            PaginationInfo
         )
     ),
     tags(

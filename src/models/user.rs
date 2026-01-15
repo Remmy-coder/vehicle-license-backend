@@ -55,3 +55,85 @@ pub struct CreateUserWithoutPassRequest {
     #[schema(example = "applicant")]
     pub role: Role,
 }
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct UserQueryParams {
+    pub page: Option<i64>,
+
+    pub limit: Option<i64>,
+
+    pub offset: Option<i64>,
+
+    pub role: Option<Role>,
+
+    pub fields: Option<String>,
+}
+
+impl UserQueryParams {
+    pub fn get_limit(&self) -> i64 {
+        self.limit.unwrap_or(50).min(100)
+    }
+
+    pub fn get_offset(&self) -> i64 {
+        let page = self.page.unwrap_or(1).max(1);
+        let per_page = self.get_limit();
+        (page - 1) * per_page
+    }
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct PaginatedResponse<T> {
+    pub data: Vec<T>,
+    pub pagination: PaginationInfo,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct PaginationInfo {
+    pub current_page: i64,
+    pub per_page: i64,
+    pub total_items: i64,
+    pub total_pages: i64,
+    pub has_next: bool,
+    pub has_prev: bool,
+}
+
+pub type PaginatedUsersResponse = PaginatedResponse<User>;
+
+#[derive(Debug, Serialize)]
+pub struct PartialUser {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub id: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub email: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub first_name: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub last_name: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub role: Option<Role>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub created_at: Option<OffsetDateTime>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub updated_at: Option<OffsetDateTime>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct GetUsersQuery {
+    pub page: Option<i64>,
+
+    pub limit: Option<i64>,
+
+    pub offset: Option<i64>,
+
+    pub role: Option<Role>,
+
+    pub fields: Option<String>,
+
+    pub export: Option<String>,
+}

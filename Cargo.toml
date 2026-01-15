@@ -25,6 +25,7 @@ time = { version = "0.3.44", features = [
   "serde",
   "serde-human-readable",
   "macros",
+  "formatting",
 ] }
 serde_json = "1"
 jwt = "0.16"
@@ -34,3 +35,4 @@ tracing = "0.1"
 tracing-subscriber = "0.3.20"
 utoipa = { version = "5", features = ["axum_extras"] }
 utoipa-swagger-ui = { version = "9.0.0", features = ["axum"] }
+csv = "1.3"

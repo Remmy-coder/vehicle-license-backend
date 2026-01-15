@@ -1,6 +1,6 @@
 use crate::{
     error::AppResult,
-    models::user::{Role, User},
+    models::user::{PartialUser, Role, User, UserQueryParams},
 };
 use nanoid::nanoid;
 use sqlx::PgPool;
@@ -150,6 +150,125 @@ impl UserRepository {
         Ok(users)
     }
 
+    pub async fn get_all_users_filtered(
+        pool: &PgPool,
+        params: &UserQueryParams,
+    ) -> AppResult<Vec<User>> {
+        let limit = params.get_limit();
+        let offset = params.get_offset();
+        let search_term = params
+            .fields
+            .as_ref()
+            .map(|s| format!("%{}%", s.trim()));
+
+        let users = match (&params.role, &search_term) {
+            (Some(role), Some(search)) => {
+                sqlx::query_as!(
+                    User,
+                    r#"
+                    SELECT 
+                        id, 
+                        email, 
+                        first_name, 
+                        last_name, 
+                        role as "role: Role", 
+                        created_at as "created_at!", 
+                        updated_at as "updated_at!"
+                    FROM users
+                    WHERE role = $1
+                        AND (
+                            email ILIKE $2
+                            OR first_name ILIKE $2
+                            OR last_name ILIKE $2
+                        )
+                    ORDER BY created_at DESC
+                    LIMIT $3 OFFSET $4
+                    "#,
+                    role.clone() as Role,
+                    search,
+                    limit,
+                    offset
+                )
+                .fetch_all(pool)
+                .await?
+            }
+            (Some(role), None) => {
+                sqlx::query_as!(
+                    User,
+                    r#"
+                    SELECT 
+                        id, 
+                        email, 
+                        first_name, 
+                        last_name, 
+                        role as "role: Role", 
+                        created_at as "created_at!", 
+                        updated_at as "updated_at!"
+                    FROM users
+                    WHERE role = $1
+                    ORDER BY created_at DESC
+                    LIMIT $2 OFFSET $3
+                    "#,
+                    role.clone() as Role,
+                    limit,
+                    offset
+                )
+                .fetch_all(pool)
+                .await?
+            }
+            (None, Some(search)) => {
+                sqlx::query_as!(
+                    User,
+                    r#"
+                    SELECT 
+                        id, 
+                        email, 
+                        first_name, 
+                        last_name, 
+                        role as "role: Role", 
+                        created_at as "created_at!", 
+                        updated_at as "updated_at!"
+                    FROM users
+                    WHERE email ILIKE $1
+                        OR first_name ILIKE $1
+                        OR last_name ILIKE $1
+                    ORDER BY created_at DESC
+                    LIMIT $2 OFFSET $3
+                    "#,
+                    search,
+                    limit,
+                    offset
+                )
+                .fetch_all(pool)
+                .await?
+            }
+            (None, None) => {
+                sqlx::query_as!(
+                    User,
+                    r#"
+                    SELECT 
+                        id, 
+                        email, 
+                        first_name, 
+                        last_name, 
+                        role as "role: Role", 
+                        created_at as "created_at!", 
+                        updated_at as "updated_at!"
+                    FROM users
+                    ORDER BY created_at DESC
+                    LIMIT $1 OFFSET $2
+                    "#,
+                    limit,
+                    offset
+                )
+                .fetch_all(pool)
+                .await?
+            }
+        };
+
+        Ok(users)
+    }
+
     pub async fn get_users_by_role(pool: &PgPool, role: Role) -> AppResult<Vec<User>> {
         let users = sqlx::query_as!(
             User,
@@ -291,6 +410,75 @@ impl UserRepository {
         Ok(result.count)
     }
 
+    pub async fn count_users_filtered(pool: &PgPool, params: &UserQueryParams) -> AppResult<i64> {
+        let search_term = params
+            .fields
+            .as_ref()
+            .map(|s| format!("%{}%", s.trim()));
+
+        let count = match (&params.role, &search_term) {
+            (Some(role), Some(search)) => {
+                let result = sqlx::query!(
+                    r#"
+                    SELECT COUNT(*) as "count!"
+                    FROM users
+                    WHERE role = $1
+                        AND (
+                            email ILIKE $2
+                            OR first_name ILIKE $2
+                            OR last_name ILIKE $2
+                        )
+                    "#,
+                    role.clone() as Role,
+                    search
+                )
+                .fetch_one(pool)
+                .await?;
+                result.count
+            }
+            (Some(role), None) => {
+                let result = sqlx::query!(
+                    r#"
+                    SELECT COUNT(*) as "count!"
+                    FROM users
+                    WHERE role = $1
+                    "#,
+                    role.clone() as Role
+                )
+                .fetch_one(pool)
+                .await?;
+                result.count
+            }
+            (None, Some(search)) => {
+                let result = sqlx::query!(
+                    r#"
+                    SELECT COUNT(*) as "count!"
+                    FROM users
+                    WHERE email ILIKE $1
+                        OR first_name ILIKE $1
+                        OR last_name ILIKE $1
+                    "#,
+                    search
+                )
+                .fetch_one(pool)
+                .await?;
+                result.count
+            }
+            (None, None) => {
+                let result = sqlx::query!(
+                    r#"
+                    SELECT COUNT(*) as "count!"
+                    FROM users
+                    "#
+                )
+                .fetch_one(pool)
+                .await?;
+                result.count
+            }
+        };
+        Ok(count)
+    }
+
     pub async fn email_exists(pool: &PgPool, email: &str) -> AppResult<bool> {
         let result = sqlx::query!(
             r#"
@@ -301,5 +489,60 @@ impl UserRepository {
         .fetch_one(pool)
         .await?;
         Ok(result.exists)
+    }
+}
+
+pub fn filter_user_fields(user: &User, fields: &Option<String>) -> PartialUser {
+    let requested_fields: Vec<String> = fields
+        .as_ref()
+        .map(|f| f.split(',').map(|s| s.trim().to_lowercase()).collect())
+        .unwrap_or_else(|| {
+            vec![
+                "id".to_string(),
+                "email".to_string(),
+                "first_name".to_string(),
+                "last_name".to_string(),
+                "role".to_string(),
+                "created_at".to_string(),
+                "updated_at".to_string(),
+            ]
+        });
+
+    PartialUser {
+        id: if requested_fields.contains(&"id".to_string()) {
+            Some(user.id.clone())
+        } else {
+            None
+        },
+        email: if requested_fields.contains(&"email".to_string()) {
+            Some(user.email.clone())
+        } else {
+            None
+        },
+        first_name: if requested_fields.contains(&"first_name".to_string()) {
+            Some(user.first_name.clone())
+        } else {
+            None
+        },
+        last_name: if requested_fields.contains(&"last_name".to_string()) {
+            Some(user.last_name.clone())
+        } else {
+            None
+        },
+        role: if requested_fields.contains(&"role".to_string()) {
+            Some(user.role.clone())
+        } else {
+            None
+        },
+        created_at: if requested_fields.contains(&"created_at".to_string()) {
+            Some(user.created_at)
+        } else {
+            None
+        },
+        updated_at: if requested_fields.contains(&"updated_at".to_string()) {
+            Some(user.updated_at)
+        } else {
+            None
+        },
     }
 }
